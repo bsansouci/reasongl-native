@@ -86,7 +86,7 @@ module Gl: ReasonglInterface.Gl.t = {
     let getPixelWidth: t => int;
     let getPixelHeight: t => int;
     let getPixelScale: t => float;
-    let init: (~argv: array(string)) => t;
+    let init: (~argv: array(string), (t) => unit) => unit;
     let setWindowSize: (~window: t, ~width: int, ~height: int) => unit;
     let getContext: t => contextT;
   };
@@ -118,11 +118,11 @@ module Gl: ReasonglInterface.Gl.t = {
      * We create an OpenGL context at 2.1 because... it seems to be the only one that we can request that
      * osx will give us and one that has an API comparable to OpenGL ES 2.0 which is what WebGL uses.
      */
-    let init = (~argv as _) => {
+    let init = (~argv as _, cb) => {
       if (Sdl.Init.init(Sdl.Init.video) != 0) {
         failwith @@ Sdl.error()
       };
-      create_window(~gl=(2, 1))
+      cb(create_window(~gl=(2, 1)))
     };
     let setWindowSize = (~window: t, ~width, ~height) =>
       Sdl.set_window_size(window, ~width, ~height);
