@@ -86,15 +86,21 @@ module Gl: ReasonglInterface.Gl.t = {
       try {
         let oc = open_out("user_data_" ++ key);
         output_value(oc, value);
+        close_out(oc);
         true;
       } {
-        | _ => false
+        | _ => {
+          print_endline("Unable to save user data");
+          false
+        }
       }
     };
     let loadUserData = (~key) => {
       try {
         let ic = open_in("user_data_" ++ key);
-        Some(input_value(ic))
+        let value = input_value(ic);
+        close_in(ic);
+        Some(value)
       } {
         | _ => None
       }
