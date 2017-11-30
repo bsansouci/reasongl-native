@@ -2,3 +2,4 @@ node_modules
 _build
 lib
 .merlin
+reasongl.o
