@@ -58,7 +58,11 @@ module Gl: ReasonglInterface.Gl.t = {
   module Gl = Tgls_new;
   let target = "native";
   type contextT = Sdl.glContextT;
-  module type FileT = {type t; let readFile: (~filename: string, ~cb: string => unit) => unit;};
+  module type FileT = {type t;
+    let readFile: (~filename: string, ~cb: string => unit) => unit;
+    let saveUserData: (~key: string, ~value: 'a) => bool;
+    let loadUserData: (~key: string) => option('a);
+  };
   module File = {
     type t;
     let readFile = (~filename, ~cb) => {
@@ -77,6 +81,23 @@ module Gl: ReasonglInterface.Gl.t = {
         };
       let text = loop([]) |> String.concat(String.make(1, '\n'));
       cb(text)
+    };
+    let saveUserData = (~key, ~value) => {
+      try {
+        let oc = open_out("user_data_" ++ key);
+        output_value(oc, value);
+        true;
+      } {
+        | _ => false
+      }
+    };
+    let loadUserData = (~key) => {
+      try {
+        let ic = open_in("user_data_" ++ key);
+        Some(input_value(ic))
+      } {
+        | _ => None
+      }
     };
   };
   module type WindowT = {
