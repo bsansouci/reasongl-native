@@ -16,9 +16,12 @@ let (>>=) = (t, f) =>
   | _ => failwith @@ Sdl.error()
   };
 
-let create_window = (~gl as (maj, min)) => {
+let create_window = (~title=?, ~gl as (maj, min)) => {
   let w_atts = Sdl.Window.(opengl + resizable + allow_highdpi);
-  let w_title = Printf.sprintf("OpenGL %d.%d (core profile)", maj, min);
+  let w_title = switch title {
+  | None => Printf.sprintf("OpenGL %d.%d (core profile)", maj, min)
+  | Some(title) => title
+  };
   let set = (a, v) => Sdl.Gl.gl_set_attribute(~attr=a, ~value=v);
   set(Sdl.Gl.context_profile_mask, Sdl.Gl.context_profile_compatibility)
   >>= (
@@ -113,7 +116,7 @@ module Gl: ReasonglInterface.Gl.t = {
     let getPixelWidth: t => int;
     let getPixelHeight: t => int;
     let getPixelScale: t => float;
-    let init: (~argv: array(string), (t) => unit) => unit;
+    let init: (~title:string=?, ~argv: array(string), (t) => unit) => unit;
     let setWindowSize: (~window: t, ~width: int, ~height: int) => unit;
     let getContext: t => contextT;
   };
@@ -145,11 +148,11 @@ module Gl: ReasonglInterface.Gl.t = {
      * We create an OpenGL context at 2.1 because... it seems to be the only one that we can request that
      * osx will give us and one that has an API comparable to OpenGL ES 2.0 which is what WebGL uses.
      */
-    let init = (~argv as _, cb) => {
+    let init = (~title=?, ~argv as _, cb) => {
       if (Sdl.Init.init(Sdl.Init.video) != 0) {
         failwith @@ Sdl.error()
       };
-      cb(create_window(~gl=(2, 1)))
+      cb(create_window(~title=?title, ~gl=(2, 1)))
     };
     let setWindowSize = (~window: t, ~width, ~height) =>
       Sdl.set_window_size(window, ~width, ~height);
