@@ -163,7 +163,7 @@ module Gl: ReasonglInterface.Gl.t = {
      * osx will give us and one that has an API comparable to OpenGL ES 2.0 which is what WebGL uses.
      */
     let init = (~title=?, ~argv as _, cb) => {
-      if (Sdl.Init.init(Sdl.Init.video) != 0) {
+      if (Sdl.Init.init(Sdl.Init.video lor Sdl.Init.audio) != 0) {
         failwith @@ Sdl.error()
       };
       cb(create_window(~title=?title, ~gl=(2, 1)))
@@ -178,6 +178,16 @@ module Gl: ReasonglInterface.Gl.t = {
       };
       ctx
     };
+  };
+  module type AudioT = {
+    type t;
+    let loadSound: (Sdl.windowT, string, t => unit) => unit;
+    let playSound: (Sdl.windowT, t, ~volume: float, ~loop: bool) => unit;
+  };
+  module Audio = {
+    type t = Sdl.soundT;
+    let loadSound = (w, s, cb) => cb(Sdl.load_audio(w, s));
+    let playSound = Sdl.play_audio;
   };
   module Events = Events;
   type mouseButtonEventT =
