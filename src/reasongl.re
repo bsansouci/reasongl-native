@@ -167,6 +167,8 @@ module Gl: ReasonglInterface.Gl.t = {
     (~button: Events.buttonStateT, ~state: Events.stateT, ~x: int, ~y: int) => unit;
   [@noalloc] external usleep : int => unit = "reasongl_usleep";
 
+  let getTimeMs = () => Unix.gettimeofday() *. 1000.;
+
   /*** See Gl.re for explanation. **/
   let render =
       (
