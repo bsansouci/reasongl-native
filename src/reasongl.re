@@ -16,9 +16,12 @@ let (>>=) = (t, f) =>
   | _ => failwith @@ Sdl.error()
   };
 
-let create_window = (~gl as (maj, min)) => {
+let create_window = (~title=?, ~gl as (maj, min)) => {
   let w_atts = Sdl.Window.(opengl + resizable + allow_highdpi);
-  let w_title = Printf.sprintf("OpenGL %d.%d (core profile)", maj, min);
+  let w_title = switch title {
+  | None => Printf.sprintf("OpenGL %d.%d (core profile)", maj, min)
+  | Some(title) => title
+  };
   let set = (a, v) => Sdl.Gl.gl_set_attribute(~attr=a, ~value=v);
   set(Sdl.Gl.context_profile_mask, Sdl.Gl.context_profile_compatibility)
   >>= (
@@ -58,7 +61,11 @@ module Gl: ReasonglInterface.Gl.t = {
   module Gl = Tgls_new;
   let target = "native";
   type contextT = Sdl.glContextT;
-  module type FileT = {type t; let readFile: (~filename: string, ~cb: string => unit) => unit;};
+  module type FileT = {type t;
+    let readFile: (~filename: string, ~cb: string => unit) => unit;
+    let saveUserData: (~key: string, ~value: 'a) => bool;
+    let loadUserData: (~key: string) => option('a);
+  };
   module File = {
     type t;
     let readFile = (~filename, ~cb) => {
@@ -78,6 +85,29 @@ module Gl: ReasonglInterface.Gl.t = {
       let text = loop([]) |> String.concat(String.make(1, '\n'));
       cb(text)
     };
+    let saveUserData = (~key, ~value) => {
+      try {
+        let oc = open_out("user_data_" ++ key);
+        output_value(oc, value);
+        close_out(oc);
+        true;
+      } {
+        | _ => {
+          print_endline("Unable to save user data");
+          false
+        }
+      }
+    };
+    let loadUserData = (~key) => {
+      try {
+        let ic = open_in("user_data_" ++ key);
+        let value = input_value(ic);
+        close_in(ic);
+        Some(value)
+      } {
+        | _ => None
+      }
+    };
   };
   module type WindowT = {
     type t;
@@ -86,7 +116,7 @@ module Gl: ReasonglInterface.Gl.t = {
     let getPixelWidth: t => int;
     let getPixelHeight: t => int;
     let getPixelScale: t => float;
-    let init: (~argv: array(string)) => t;
+    let init: (~title:string=?, ~argv: array(string), (t) => unit) => unit;
     let setWindowSize: (~window: t, ~width: int, ~height: int) => unit;
     let getContext: t => contextT;
   };
@@ -118,11 +148,11 @@ module Gl: ReasonglInterface.Gl.t = {
      * We create an OpenGL context at 2.1 because... it seems to be the only one that we can request that
      * osx will give us and one that has an API comparable to OpenGL ES 2.0 which is what WebGL uses.
      */
-    let init = (~argv as _) => {
+    let init = (~title=?, ~argv as _, cb) => {
       if (Sdl.Init.init(Sdl.Init.video) != 0) {
         failwith @@ Sdl.error()
       };
-      create_window(~gl=(2, 1))
+      cb(create_window(~title=?title, ~gl=(2, 1)))
     };
     let setWindowSize = (~window: t, ~width, ~height) =>
       Sdl.set_window_size(window, ~width, ~height);
@@ -139,6 +169,8 @@ module Gl: ReasonglInterface.Gl.t = {
   type mouseButtonEventT =
     (~button: Events.buttonStateT, ~state: Events.stateT, ~x: int, ~y: int) => unit;
   [@noalloc] external usleep : int => unit = "reasongl_usleep";
+
+  let getTimeMs = () => Unix.gettimeofday() *. 1000.;
 
   /*** See Gl.re for explanation. **/
   let render =
