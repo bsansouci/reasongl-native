@@ -62,13 +62,13 @@ module Gl: ReasonglInterface.Gl.t = {
   let target = "native";
   type contextT = Sdl.glContextT;
   module type FileT = {type t;
-    let readFile: (~filename: string, ~cb: string => unit) => unit;
-    let saveUserData: (~key: string, ~value: 'a) => bool;
-    let loadUserData: (~key: string) => option('a);
+    let readFile: (~context: contextT, ~filename: string, ~cb: string => unit) => unit;
+    let saveUserData: (~context: contextT, ~key: string, ~value: 'a) => bool;
+    let loadUserData: (~context: contextT, ~key: string) => option('a);
   };
   module File = {
     type t;
-    let readFile = (~filename, ~cb) => {
+    let readFile = (~context, ~filename, ~cb) => {
       let ic = open_in(filename);
       let try_read = () =>
         switch (input_line(ic)) {
@@ -85,7 +85,7 @@ module Gl: ReasonglInterface.Gl.t = {
       let text = loop([]) |> String.concat(String.make(1, '\n'));
       cb(text)
     };
-    let saveUserData = (~key, ~value) => {
+    let saveUserData = (~context, ~key, ~value) => {
       try {
         let oc = open_out("user_data_" ++ key);
         output_value(oc, value);
@@ -98,7 +98,7 @@ module Gl: ReasonglInterface.Gl.t = {
         }
       }
     };
-    let loadUserData = (~key) => {
+    let loadUserData = (~context, ~key) => {
       try {
         let ic = open_in("user_data_" ++ key);
         let value = input_value(ic);
@@ -182,6 +182,7 @@ module Gl: ReasonglInterface.Gl.t = {
         ~keyDown: option(((~keycode: Events.keycodeT, ~repeat: bool) => unit))=?,
         ~keyUp: option(((~keycode: Events.keycodeT) => unit))=?,
         ~windowResize: option((unit => unit))=?,
+        ~backPressed=?,
         ~displayFunc: float => unit,
         ()
       ) => {
@@ -342,7 +343,7 @@ module Gl: ReasonglInterface.Gl.t = {
    * to pass in the C `char*` directly to tgls if we can figure out how ctypes works.
    */
   external soilLoadImage : (~filename: string, ~loadOption: int) => option(imageT) = "load_image";
-  let loadImage = (~filename, ~loadOption=LoadAuto, ~callback: option(imageT) => unit, ()) =>
+  let loadImage = (~context, ~filename, ~loadOption=LoadAuto, ~callback: option(imageT) => unit, ()) =>
     switch loadOption {
     | LoadAuto => callback(soilLoadImage(~filename, ~loadOption=0))
     | LoadL => callback(soilLoadImage(~filename, ~loadOption=1))
@@ -352,6 +353,23 @@ module Gl: ReasonglInterface.Gl.t = {
     };
   let texImage2D_RGBA = (~context as _, ~target, ~level, ~width, ~height, ~border, ~data) =>
     Gl.texImage2D_RGBA(~target, ~level, ~width, ~height, ~border, ~data);
+
+    let fillTextureWithColor = (~context: contextT, ~target: int, ~level: int,
+    ~red: int,
+    ~green: int,
+    ~blue: int,
+    ~alpha: int
+  ) =>
+    texImage2D_RGBA(
+      ~context,
+      ~target,
+      ~level,
+      ~width=1,
+      ~height=1,
+      ~border=0,
+      ~data=Bigarray.Array1.of_array(Bigarray.Int8_unsigned, Bigarray.c_layout, [|red, green, blue, alpha|])
+    );
+
   let texImage2DWithImage = (~context, ~target, ~level, ~image) =>
     texImage2D_RGBA(
       ~context,
