@@ -113,6 +113,8 @@ module Gl: ReasonglInterface.Gl.t = {
     type t;
     let getWidth: t => int;
     let getHeight: t => int;
+    let getMaxWidth: t => int;
+    let getMaxHeight: t => int;
     let getPixelWidth: t => int;
     let getPixelHeight: t => int;
     let getPixelScale: t => float;
@@ -142,6 +144,18 @@ module Gl: ReasonglInterface.Gl.t = {
     let getPixelScale = (window: t) => {
       let {Sdl.hdpi} = Sdl.get_window_dpi(window);
       hdpi /. 72.
+    };
+    let getMaxWidth = (window: t) => {
+      /* TODO need this sdl function
+      let (width, _) = Sdl.get_window_maximum_size(window); */
+      /* width */
+      1000
+    };
+    let getMaxHeight = (window: t) => {
+      /* TODO need this sdl function
+      let (_, height) = Sdl.get_window_maximum_size(window);
+      height */
+      1000
     };
 
     /***
