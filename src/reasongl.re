@@ -61,11 +61,6 @@ module Gl: ReasonglInterface.Gl.t = {
   module Gl = Tgls_new;
   let target = "native";
   type contextT = Sdl.glContextT;
-  module type FileT = {type t;
-    let readFile: (~context: contextT, ~filename: string, ~cb: string => unit) => unit;
-    let saveUserData: (~context: contextT, ~key: string, ~value: 'a) => bool;
-    let loadUserData: (~context: contextT, ~key: string) => option('a);
-  };
   module File = {
     type t;
     let readFile = (~context, ~filename, ~cb) => {
@@ -108,19 +103,6 @@ module Gl: ReasonglInterface.Gl.t = {
         | _ => None
       }
     };
-  };
-  module type WindowT = {
-    type t;
-    let getWidth: t => int;
-    let getHeight: t => int;
-    let getMaxWidth: t => int;
-    let getMaxHeight: t => int;
-    let getPixelWidth: t => int;
-    let getPixelHeight: t => int;
-    let getPixelScale: t => float;
-    let init: (~title:string=?, ~argv: array(string), (t) => unit) => unit;
-    let setWindowSize: (~window: t, ~width: int, ~height: int) => unit;
-    let getContext: t => contextT;
   };
   module Window = {
     type t = Sdl.windowT;
